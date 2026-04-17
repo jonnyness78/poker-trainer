@@ -1,19 +1,63 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
-// --- CONFIG ---
+type Position = 'UTG' | 'EP' | 'MP' | 'CO' | 'BTN' | 'SB' | 'BB';
+type PlayerType =
+  | 'Unknown'
+  | 'TAG Reg'
+  | 'LAG Reg'
+  | 'Trying Rec'
+  | 'Passive Fish'
+  | 'Aggro Fish'
+  | 'Whale'
+  | 'You';
+type ScenarioType = 'open' | 'vs_open' | 'limp_iso' | 'multiway';
+type ActionType = 'FOLD' | 'CALL' | 'RAISE' | 'LIMP';
 
-const POSITIONS = ['UTG', 'EP', 'MP', 'CO', 'BTN', 'SB', 'BB'];
+type TablePlayer = {
+  position: Position;
+  type: PlayerType;
+  stack: number;
+};
 
-const SEAT_POSITIONS = {
-  BB:  { left: '50%', top: '85%' },
+type HistoryAction = {
+  pos: Position;
+  type: ActionType;
+  amount: number;
+};
+
+type Scenario = {
+  heroPos: Position;
+  heroStack: number;
+  hand: string[];
+  handLabel: string;
+  history: HistoryAction[];
+  pot: number;
+  table: TablePlayer[];
+  text: string;
+  scenarioType: ScenarioType;
+  playersLeft: number;
+};
+
+type DecisionRecord = {
+  action: string;
+  heroPos: Position;
+  scenarioType: ScenarioType;
+  hand: string;
+  timestamp: string;
+};
+
+const POSITIONS: Position[] = ['UTG', 'EP', 'MP', 'CO', 'BTN', 'SB', 'BB'];
+
+const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
+  BB: { left: '50%', top: '85%' },
   UTG: { left: '30%', top: '75%' },
-  EP:  { left: '10%', top: '50%' },
-  MP:  { left: '30%', top: '25%' },
-  CO:  { left: '50%', top: '15%' },
+  EP: { left: '10%', top: '50%' },
+  MP: { left: '30%', top: '25%' },
+  CO: { left: '50%', top: '15%' },
   BTN: { left: '70%', top: '25%' },
-  SB:  { left: '80%', top: '70%' }
+  SB: { left: '80%', top: '70%' }
 };
 
 const TIMER_PRESETS = [60, 30, 15, 10];
@@ -22,76 +66,160 @@ const ACTIONS = [
   { label: 'Fold', color: 'bg-red-600' },
   { label: 'Call', color: 'bg-blue-600' },
   { label: 'Raise 3x', color: 'bg-green-600' }
-];
+] as const;
 
 const STACKS = [25, 40, 100, 200];
+const STORAGE_KEY = 'preflop-trainer-decisions';
 
-// --- HELPERS ---
+const POSITION_INDEX: Record<Position, number> = {
+  UTG: 0,
+  EP: 1,
+  MP: 2,
+  CO: 3,
+  BTN: 4,
+  SB: 5,
+  BB: 6
+};
 
-function randomItem(arr) {
+const POSITION_OPEN_RANGES: Record<Exclude<Position, 'BB'>, string[]> = {
+  UTG: [
+    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88',
+    'AKs', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs',
+    'AKo', 'AQo'
+  ],
+  EP: [
+    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77',
+    'AKs', 'AQs', 'AJs', 'ATs', 'A5s', 'KQs', 'KJs', 'QJs', 'JTs', 'T9s',
+    'AKo', 'AQo', 'AJo', 'KQo'
+  ],
+  MP: [
+    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66',
+    'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A5s', 'KQs', 'KJs', 'KTs', 'QJs', 'JTs', 'T9s', '98s',
+    'AKo', 'AQo', 'AJo', 'KQo'
+  ],
+  CO: [
+    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55',
+    'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A5s', 'A4s', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s',
+    'AKo', 'AQo', 'AJo', 'ATo', 'KQo', 'KJo', 'QJo'
+  ],
+  BTN: [
+    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22',
+    'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s',
+    'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', '98s', '87s', '76s', '65s', '54s',
+    'AKo', 'AQo', 'AJo', 'ATo', 'A9o', 'KQo', 'KJo', 'QJo', 'JTo'
+  ],
+  SB: [
+    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55', '44', '33', '22',
+    'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A5s', 'A4s', 'A3s', 'A2s',
+    'KQs', 'KJs', 'KTs', 'K9s', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', '65s',
+    'AKo', 'AQo', 'AJo', 'ATo', 'KQo', 'KJo', 'QJo'
+  ]
+};
+
+const HERO_RESPONSE_RANGE: Record<Position, string[]> = {
+  UTG: POSITION_OPEN_RANGES.UTG,
+  EP: POSITION_OPEN_RANGES.EP,
+  MP: POSITION_OPEN_RANGES.MP,
+  CO: [...POSITION_OPEN_RANGES.CO, 'A7s', 'KTo'],
+  BTN: [...POSITION_OPEN_RANGES.BTN, 'A8o', 'KTo', 'QTo', '97s'],
+  SB: [...POSITION_OPEN_RANGES.SB, 'KTo', 'QTo', 'JTo'],
+  BB: [...POSITION_OPEN_RANGES.BTN, 'T8s', '97s', '86s', 'A7o', 'KTo', 'QTo']
+};
+
+const PLAYER_TYPE_WEIGHTS: Array<{ label: Exclude<PlayerType, 'You'>; weight: number }> = [
+  { label: 'Unknown', weight: 30 },
+  { label: 'TAG Reg', weight: 20 },
+  { label: 'LAG Reg', weight: 10 },
+  { label: 'Trying Rec', weight: 10 },
+  { label: 'Passive Fish', weight: 15 },
+  { label: 'Aggro Fish', weight: 10 },
+  { label: 'Whale', weight: 5 }
+];
+
+const PLAYER_PROFILES: Record<Exclude<PlayerType, 'You'>, {
+  limpChance: number;
+  openRangeShift: number;
+  flatVsOpen: number;
+  raiseSizes: number[];
+}> = {
+  Unknown: { limpChance: 0.08, openRangeShift: 0, flatVsOpen: 0.18, raiseSizes: [2.5, 3] },
+  'TAG Reg': { limpChance: 0.02, openRangeShift: -6, flatVsOpen: 0.12, raiseSizes: [2.2, 2.5] },
+  'LAG Reg': { limpChance: 0.03, openRangeShift: 8, flatVsOpen: 0.18, raiseSizes: [2.2, 2.5, 3] },
+  'Trying Rec': { limpChance: 0.12, openRangeShift: 4, flatVsOpen: 0.28, raiseSizes: [2.5, 3] },
+  'Passive Fish': { limpChance: 0.42, openRangeShift: 10, flatVsOpen: 0.4, raiseSizes: [3] },
+  'Aggro Fish': { limpChance: 0.1, openRangeShift: 12, flatVsOpen: 0.22, raiseSizes: [3, 3.5, 4.5] },
+  Whale: { limpChance: 0.38, openRangeShift: 18, flatVsOpen: 0.45, raiseSizes: [3, 4, 5] }
+};
+
+function randomItem<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function weightedPlayerType() {
-  const types = [
-    { label: "Unknown", weight: 30 },
-    { label: "TAG Reg", weight: 20 },
-    { label: "LAG Reg", weight: 10 },
-    { label: "Trying Rec", weight: 10 },
-    { label: "Passive Fish", weight: 15 },
-    { label: "Aggro Fish", weight: 10 },
-    { label: "Whale", weight: 5 }
-  ];
+function weightedPick<T>(items: Array<{ item: T; weight: number }>): T {
+  const total = items.reduce((sum, current) => sum + current.weight, 0);
+  let roll = Math.random() * total;
 
-  const total = types.reduce((sum, t) => sum + t.weight, 0);
-  let r = Math.random() * total;
-
-  for (let t of types) {
-    if (r < t.weight) return t.label;
-    r -= t.weight;
+  for (const current of items) {
+    if (roll < current.weight) return current.item;
+    roll -= current.weight;
   }
 
-  return "Unknown";
+  return items[0].item;
 }
 
-function generateHand() {
-  const RANGE = [
-    'AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33',
-    'AKs','AQs','AJs','ATs','KQs','KJs','QJs','JTs',
-    'AKo','AQo','AJo','ATo','KQo','KJo','QJo',
-    'A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s',
-    'T9s','98s','87s','76s','65s'
-  ];
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
 
-  const hand = RANGE[Math.floor(Math.random() * RANGE.length)];
-  const suits = ['♠','♥','♦','♣'];
-  const pickSuit = () => suits[Math.floor(Math.random() * suits.length)];
+function weightedPlayerType(): Exclude<PlayerType, 'You'> {
+  return weightedPick(PLAYER_TYPE_WEIGHTS.map((entry) => ({ item: entry.label, weight: entry.weight })));
+}
 
+function getOpenRange(position: Exclude<Position, 'BB'>, playerType: Exclude<PlayerType, 'You'>) {
+  const baseRange = POSITION_OPEN_RANGES[position];
+  const shift = PLAYER_PROFILES[playerType].openRangeShift;
+  const targetSize = clamp(baseRange.length + shift, 8, baseRange.length + 18);
+  return baseRange.slice(0, targetSize);
+}
+
+function getFacingRange(heroPos: Position, scenarioType: ScenarioType) {
+  const base = HERO_RESPONSE_RANGE[heroPos];
+
+  if (scenarioType === 'open') return base;
+  if (scenarioType === 'limp_iso') return base.slice(0, clamp(base.length - 10, 12, base.length));
+  if (scenarioType === 'multiway') return base.slice(0, clamp(base.length - 16, 10, base.length));
+  return base.slice(0, clamp(base.length - 8, 12, base.length));
+}
+
+function generateHandFromPool(pool: string[]) {
+  const hand = randomItem(pool);
+  const suits = ['♠', '♥', '♦', '♣'];
+  const pickSuit = () => randomItem(suits);
   const r1 = hand[0];
   const r2 = hand[1];
 
   if (hand.endsWith('s')) {
     const suit = pickSuit();
-    return [`${r1}${suit}`, `${r2}${suit}`];
+    return { label: hand, cards: [`${r1}${suit}`, `${r2}${suit}`] };
   }
 
   if (hand.endsWith('o')) {
     let s1 = pickSuit();
     let s2 = pickSuit();
     while (s1 === s2) s2 = pickSuit();
-    return [`${r1}${s1}`, `${r2}${s2}`];
+    return { label: hand, cards: [`${r1}${s1}`, `${r2}${s2}`] };
   }
 
   let s1 = pickSuit();
   let s2 = pickSuit();
   while (s1 === s2) s2 = pickSuit();
 
-  return [`${r1}${s1}`, `${r2}${s2}`];
+  return { label: hand, cards: [`${r1}${s1}`, `${r2}${s2}`] };
 }
 
-function generateTable(heroPos, heroStack) {
-  return POSITIONS.map(pos => {
-    if (pos === heroPos) return { position: pos, type: "You", stack: heroStack };
+function generateTable(heroPos: Position, heroStack: number) {
+  return POSITIONS.map((pos) => {
+    if (pos === heroPos) return { position: pos, type: 'You' as const, stack: heroStack };
     return {
       position: pos,
       type: weightedPlayerType(),
@@ -100,85 +228,206 @@ function generateTable(heroPos, heroStack) {
   });
 }
 
-// --- SCENARIO ENGINE ---
+function getPlayersLeftToAct(heroPos: Position) {
+  return POSITIONS.filter((pos) => POSITION_INDEX[pos] > POSITION_INDEX[heroPos]).length;
+}
 
-function generateScenario() {
+function getPlayer(table: TablePlayer[], pos: Position) {
+  return table.find((player) => player.position === pos)!;
+}
+
+function getOpenWeight(player: TablePlayer) {
+  if (player.type === 'You' || player.position === 'BB') return 0;
+  return getOpenRange(player.position, player.type).length;
+}
+
+function pickBehaviorDrivenOpener(table: TablePlayer[], heroPos: Position) {
+  const candidates = table
+    .filter((player) => POSITION_INDEX[player.position] < POSITION_INDEX[heroPos] && player.position !== 'BB')
+    .map((player) => ({
+      item: player.position,
+      weight: Math.max(getOpenWeight(player), 1)
+    }));
+
+  return weightedPick(candidates);
+}
+
+function pickBehaviorDrivenLimper(table: TablePlayer[], heroPos: Position) {
+  const candidates = table
+    .filter((player) => POSITION_INDEX[player.position] < POSITION_INDEX[heroPos] && player.position !== 'BB')
+    .map((player) => {
+      const profile = PLAYER_PROFILES[player.type as Exclude<PlayerType, 'You'>];
+      const looseness = getOpenWeight(player) / 8;
+      return {
+        item: player.position,
+        weight: Math.max(profile.limpChance * 100 + looseness, 1)
+      };
+    });
+
+  return weightedPick(candidates);
+}
+
+function createOpenScenario(): Scenario {
+  const heroPos = weightedPick<Position>([
+    { item: 'CO', weight: 25 },
+    { item: 'BTN', weight: 32 },
+    { item: 'SB', weight: 18 },
+    { item: 'MP', weight: 15 },
+    { item: 'EP', weight: 10 }
+  ]);
   const heroStack = randomItem(STACKS);
-
-  let base;
-  const r = Math.random();
-
-  if (r < 0.5) {
-    base = { type: "open", heroPos: randomItem(["CO","BTN"]) };
-  } else if (r < 0.9) {
-    base = {
-      type: "vs_open",
-      heroPos: "BTN",
-      openerPos: randomItem(["UTG","EP","MP","CO"])
-    };
-  } else {
-    base = {
-      type: "multiway",
-      heroPos: "BTN",
-      openerPos: "UTG",
-      callerPos: "MP"
-    };
-  }
-
-  const table = generateTable(base.heroPos, heroStack);
-  const getPlayer = pos => table.find(p => p.position === pos);
-
-  let history = [];
-  let text = "";
-  let pot = 1.5;
-
-  if (base.type === "open") {
-    text = `Folds to you on ${base.heroPos}`;
-  }
-
-  if (base.type === "vs_open") {
-    const opener = getPlayer(base.openerPos);
-
-    if (opener.type.includes("Fish") && Math.random() < 0.4) {
-      history.push({ pos: base.openerPos, type: 'LIMP', amount: 1 });
-      text = `${base.openerPos} (${opener.type}) limps — you're on ${base.heroPos}`;
-      pot += 1;
-    } else {
-      const size = Math.random() < 0.5 ? 2.5 : 3;
-      history.push({ pos: base.openerPos, type: 'RAISE', amount: size });
-      text = `${base.openerPos} (${opener.type}) raises ${size}BB — you're on ${base.heroPos}`;
-      pot += size;
-    }
-  }
-
-  if (base.type === "multiway") {
-    const opener = getPlayer(base.openerPos);
-    const caller = getPlayer(base.callerPos);
-
-    history.push({ pos: base.openerPos, type: 'RAISE', amount: 3 });
-    history.push({ pos: base.callerPos, type: 'CALL', amount: 3 });
-
-    text = `${base.openerPos} (${opener.type}) raises, ${base.callerPos} (${caller.type}) calls — you're on ${base.heroPos}`;
-    pot += 6;
-  }
+  const table = generateTable(heroPos, heroStack);
+  const handData = generateHandFromPool(getFacingRange(heroPos, 'open'));
 
   return {
-    heroPos: base.heroPos,
-    hand: generateHand(),
-    history,
-    pot,
+    heroPos,
+    heroStack,
+    hand: handData.cards,
+    handLabel: handData.label,
+    history: [],
+    pot: 1.5,
     table,
-    text
+    text: `Folds to you on ${heroPos}. ${getPlayersLeftToAct(heroPos)} player${getPlayersLeftToAct(heroPos) === 1 ? '' : 's'} left behind.`,
+    scenarioType: 'open',
+    playersLeft: getPlayersLeftToAct(heroPos)
   };
 }
 
-// --- MAIN COMPONENT ---
+function createVsOpenScenario(): Scenario {
+  const heroPos = weightedPick<Position>([
+    { item: 'BTN', weight: 45 },
+    { item: 'CO', weight: 18 },
+    { item: 'SB', weight: 17 },
+    { item: 'BB', weight: 20 }
+  ]);
+
+  const possibleOpeners = POSITIONS.filter(
+    (pos) => pos !== 'BB' && POSITION_INDEX[pos] < POSITION_INDEX[heroPos]
+  ) as Exclude<Position, 'BB'>[];
+  const heroStack = randomItem(STACKS);
+  const table = generateTable(heroPos, heroStack);
+  const openerPos = possibleOpeners.length === 1 ? possibleOpeners[0] : pickBehaviorDrivenOpener(table, heroPos);
+  const opener = getPlayer(table, openerPos);
+  const profile = PLAYER_PROFILES[opener.type as Exclude<PlayerType, 'You'>];
+  const size = randomItem(profile.raiseSizes);
+  const handData = generateHandFromPool(getFacingRange(heroPos, 'vs_open'));
+
+  return {
+    heroPos,
+    heroStack,
+    hand: handData.cards,
+    handLabel: handData.label,
+    history: [{ pos: openerPos, type: 'RAISE', amount: size }],
+    pot: Number((1.5 + size).toFixed(1)),
+    table,
+    text: `${openerPos} (${opener.type}) opens to ${size}BB. You act on ${heroPos} with ${getPlayersLeftToAct(heroPos)} player${getPlayersLeftToAct(heroPos) === 1 ? '' : 's'} left behind.`,
+    scenarioType: 'vs_open',
+    playersLeft: getPlayersLeftToAct(heroPos)
+  };
+}
+
+function createLimpIsoScenario(): Scenario {
+  const heroPos = weightedPick<Position>([
+    { item: 'CO', weight: 25 },
+    { item: 'BTN', weight: 45 },
+    { item: 'SB', weight: 10 },
+    { item: 'BB', weight: 20 }
+  ]);
+  const limpers = POSITIONS.filter(
+    (pos) => pos !== 'BB' && POSITION_INDEX[pos] < POSITION_INDEX[heroPos]
+  ) as Exclude<Position, 'BB'>[];
+  const heroStack = randomItem(STACKS);
+  const table = generateTable(heroPos, heroStack);
+  const limperPos = limpers.length === 1 ? limpers[0] : pickBehaviorDrivenLimper(table, heroPos);
+  const limper = getPlayer(table, limperPos);
+  const handData = generateHandFromPool(getFacingRange(heroPos, 'limp_iso'));
+
+  return {
+    heroPos,
+    heroStack,
+    hand: handData.cards,
+    handLabel: handData.label,
+    history: [{ pos: limperPos, type: 'LIMP', amount: 1 }],
+    pot: 2.5,
+    table,
+    text: `${limperPos} (${limper.type}) limps. You can isolate from ${heroPos}.`,
+    scenarioType: 'limp_iso',
+    playersLeft: getPlayersLeftToAct(heroPos)
+  };
+}
+
+function createMultiwayScenario(): Scenario {
+  const heroPos: Position = 'BTN';
+  const openerOptions: Exclude<Position, 'BB'>[] = ['UTG', 'EP', 'MP', 'CO'];
+  const heroStack = randomItem(STACKS);
+  const table = generateTable(heroPos, heroStack);
+  const behaviorOpener = pickBehaviorDrivenOpener(table, heroPos) as Exclude<Position, 'BB'>;
+  const openerPos = openerOptions.includes(behaviorOpener) ? behaviorOpener : randomItem(openerOptions);
+  const opener = getPlayer(table, openerPos);
+  const openerProfile = PLAYER_PROFILES[opener.type as Exclude<PlayerType, 'You'>];
+  const size = randomItem(openerProfile.raiseSizes);
+
+  const callers = POSITIONS.filter(
+    (pos) => POSITION_INDEX[pos] > POSITION_INDEX[openerPos] && POSITION_INDEX[pos] < POSITION_INDEX[heroPos]
+  ) as Position[];
+  const likelyCallers = callers.filter((pos) => {
+    const profile = PLAYER_PROFILES[getPlayer(table, pos).type as Exclude<PlayerType, 'You'>];
+    return Math.random() < profile.flatVsOpen;
+  });
+  const callerPos = likelyCallers[0] ?? callers[0];
+  const caller = getPlayer(table, callerPos);
+  const handData = generateHandFromPool(getFacingRange(heroPos, 'multiway'));
+
+  return {
+    heroPos,
+    heroStack,
+    hand: handData.cards,
+    handLabel: handData.label,
+    history: [
+      { pos: openerPos, type: 'RAISE', amount: size },
+      { pos: callerPos, type: 'CALL', amount: size }
+    ],
+    pot: Number((1.5 + size + size).toFixed(1)),
+    table,
+    text: `${openerPos} (${opener.type}) opens ${size}BB, ${callerPos} (${caller.type}) flats. You act on BTN.`,
+    scenarioType: 'multiway',
+    playersLeft: 0
+  };
+}
+
+function generateScenario(): Scenario {
+  const scenarioType = weightedPick<ScenarioType>([
+    { item: 'open', weight: 42 },
+    { item: 'vs_open', weight: 36 },
+    { item: 'limp_iso', weight: 17 },
+    { item: 'multiway', weight: 5 }
+  ]);
+
+  if (scenarioType === 'open') return createOpenScenario();
+  if (scenarioType === 'vs_open') return createVsOpenScenario();
+  if (scenarioType === 'limp_iso') return createLimpIsoScenario();
+  return createMultiwayScenario();
+}
+
+function readStoredDecisions(): DecisionRecord[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 function PokerTrainer() {
-  const [scenario, setScenario] = useState(null);
+  const [scenario, setScenario] = useState<Scenario | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
   const [timerMax, setTimerMax] = useState(30);
   const [isPaused, setIsPaused] = useState(false);
+  const [decisionCount, setDecisionCount] = useState(0);
 
   const loadNewHand = useCallback(() => {
     setScenario(generateScenario());
@@ -186,104 +435,147 @@ function PokerTrainer() {
     setIsPaused(false);
   }, [timerMax]);
 
+  const recordDecision = useCallback((actionLabel: string) => {
+    if (!scenario || typeof window === 'undefined') return;
+
+    const entry: DecisionRecord = {
+      action: actionLabel,
+      heroPos: scenario.heroPos,
+      scenarioType: scenario.scenarioType,
+      hand: scenario.handLabel,
+      timestamp: new Date().toISOString()
+    };
+
+    const existing = readStoredDecisions();
+    const next = [entry, ...existing].slice(0, 500);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setDecisionCount(next.length);
+    loadNewHand();
+  }, [loadNewHand, scenario]);
+
   useEffect(() => {
-    if (isPaused) return;
+    setDecisionCount(readStoredDecisions().length);
+  }, []);
+
+  useEffect(() => {
+    setTimeLeft(timerMax);
+  }, [timerMax]);
+
+  useEffect(() => {
+    if (isPaused || !scenario) return;
 
     if (timeLeft <= 0) {
       loadNewHand();
       return;
     }
 
-    const t = setInterval(() => {
-      setTimeLeft(t => t - 1);
+    const timeout = window.setTimeout(() => {
+      setTimeLeft((current) => current - 1);
     }, 1000);
 
-    return () => clearInterval(t);
-  }, [timeLeft, isPaused]);
+    return () => window.clearTimeout(timeout);
+  }, [timeLeft, isPaused, scenario, loadNewHand]);
 
   useEffect(() => {
     loadNewHand();
-  }, []);
+  }, [loadNewHand]);
 
   if (!scenario) return null;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
+    <div className="min-h-screen bg-slate-900 p-8 text-white">
+      <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-blue-400">PRE-FLOP VOLUMIZER</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            {decisionCount} decisions stored locally
+          </p>
+        </div>
 
-      <div className="flex justify-between mb-10">
-        <h1 className="text-2xl font-bold text-blue-400">PRE-FLOP VOLUMIZER</h1>
         <div className="flex gap-2">
-          {TIMER_PRESETS.map(s => (
-            <button key={s}
-              onClick={() => setTimerMax(s)}
-              className={`px-3 py-1 rounded text-xs ${timerMax === s ? 'bg-blue-500' : 'bg-slate-700'}`}>
-              {s}s
+          {TIMER_PRESETS.map((seconds) => (
+            <button
+              key={seconds}
+              onClick={() => setTimerMax(seconds)}
+              className={`rounded px-3 py-1 text-xs ${
+                timerMax === seconds ? 'bg-blue-500' : 'bg-slate-700'
+              }`}
+            >
+              {seconds}s
             </button>
           ))}
         </div>
       </div>
 
-      <div className="relative max-w-4xl mx-auto h-[500px]">
-        <div className="absolute inset-0 bg-emerald-800 border-[12px] border-emerald-950 rounded-[200px]" />
+      <div className="relative mx-auto h-[500px] max-w-4xl">
+        <div className="absolute inset-0 rounded-[200px] border-[12px] border-emerald-950 bg-emerald-800" />
 
-        {POSITIONS.map(pos => {
-          const player = scenario.table.find(p => p.position === pos);
-          const action = scenario.history.find(h => h.pos === pos);
+        {POSITIONS.map((pos) => {
+          const player = scenario.table.find((entry) => entry.position === pos)!;
+          const action = scenario.history.find((entry) => entry.pos === pos);
           const isHero = scenario.heroPos === pos;
 
-          let actionLabel = "";
-          let actionStyle = "";
+          let actionLabel = '';
+          let actionStyle = '';
 
-          if (action?.type === "RAISE") {
+          if (action?.type === 'RAISE') {
             actionLabel = `Raise ${action.amount}x`;
-            actionStyle = "bg-red-900/70 border-red-400 scale-105";
+            actionStyle = 'scale-105 border-red-400 bg-red-900/70';
           }
-          if (action?.type === "CALL") {
-            actionLabel = "Call";
-            actionStyle = "bg-blue-900/70 border-blue-400 scale-105";
+
+          if (action?.type === 'CALL') {
+            actionLabel = 'Call';
+            actionStyle = 'scale-105 border-blue-400 bg-blue-900/70';
           }
-          if (action?.type === "LIMP") {
-            actionLabel = "Limp";
-            actionStyle = "bg-yellow-900/70 border-yellow-400 scale-105";
+
+          if (action?.type === 'LIMP') {
+            actionLabel = 'Limp';
+            actionStyle = 'scale-105 border-yellow-400 bg-yellow-900/70';
           }
 
           return (
-            <div key={pos}
-              className={`absolute p-3 rounded-lg border-2 w-28 text-center transition-all duration-200
-              ${isHero 
-                ? 'border-yellow-400 bg-slate-800 scale-110' 
-                : action 
-                  ? actionStyle 
-                  : 'border-emerald-700 bg-emerald-900/50'
+            <div
+              key={pos}
+              className={`absolute w-28 rounded-lg border-2 p-3 text-center transition-all duration-200 ${
+                isHero
+                  ? 'scale-110 border-yellow-400 bg-slate-800'
+                  : action
+                    ? actionStyle
+                    : 'border-emerald-700 bg-emerald-900/50'
               }`}
               style={{
-                left: SEAT_POSITIONS[pos].left,
-                top: SEAT_POSITIONS[pos].top,
+                ...SEAT_POSITIONS[pos],
                 transform: 'translate(-50%, -50%)'
-              }}>
-
+              }}
+            >
               <div className="text-xs">{pos}</div>
               {!isHero && <div className="text-[10px] opacity-70">{player.type}</div>}
               <div className="text-[11px]">{player.stack}BB</div>
-              {isHero && <div className="text-sm mt-1">{scenario.hand.join(' ')}</div>}
-              {action && <div className="text-[10px] mt-1">{actionLabel}</div>}
+              {isHero && <div className="mt-1 text-sm">{scenario.hand.join(' ')}</div>}
+              {action && <div className="mt-1 text-[10px]">{actionLabel}</div>}
             </div>
           );
         })}
 
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 text-center">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 text-center">
           <div className="text-sm opacity-60">POT SIZE</div>
           <div className="text-3xl">{scenario.pot} BB</div>
+          <div className="mt-3 text-xs text-slate-300">
+            {scenario.playersLeft} left to act
+          </div>
         </div>
       </div>
 
-      <div className="text-center mt-6 text-lg">
-        {scenario.text}
+      <div className="mt-6 text-center text-lg">{scenario.text}</div>
+
+      <div className="mx-auto mt-2 flex max-w-xl justify-center gap-4 text-xs uppercase tracking-wide text-slate-400">
+        <span>{scenario.scenarioType.replace('_', ' ')}</span>
+        <span>{scenario.heroPos}</span>
+        <span>{scenario.handLabel}</span>
       </div>
 
-      {/* TIMER */}
-      <div className="max-w-xl mx-auto mt-6">
-        <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+      <div className="mx-auto mt-6 max-w-xl">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
           <div
             className={`h-full transition-all duration-1000 ${
               isPaused ? 'bg-gray-500' : 'bg-blue-400'
@@ -292,27 +584,27 @@ function PokerTrainer() {
           />
         </div>
 
-        {/* PAUSE BUTTON */}
-        <div className="flex justify-center mt-4">
+        <div className="mt-4 flex justify-center">
           <button
-            onClick={() => setIsPaused(p => !p)}
-            className="bg-yellow-600 px-4 py-2 rounded-lg font-bold"
+            onClick={() => setIsPaused((paused) => !paused)}
+            className="rounded-lg bg-yellow-600 px-4 py-2 font-bold"
           >
             {isPaused ? 'Resume' : 'Pause'}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto mt-8">
-        {ACTIONS.map(a => (
-          <button key={a.label}
-            onClick={loadNewHand}
-            className={`${a.color} py-4 rounded-xl font-bold text-xl`}>
-            {a.label}
+      <div className="mx-auto mt-8 grid max-w-xl grid-cols-3 gap-4">
+        {ACTIONS.map((action) => (
+          <button
+            key={action.label}
+            onClick={() => recordDecision(action.label)}
+            className={`${action.color} rounded-xl py-4 text-xl font-bold`}
+          >
+            {action.label}
           </button>
         ))}
       </div>
-
     </div>
   );
 }
