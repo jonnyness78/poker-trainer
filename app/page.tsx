@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-type Position = 'UTG' | 'EP' | 'MP' | 'CO' | 'BTN' | 'SB' | 'BB';
+type Position = 'UTG' | 'MP' | 'CO' | 'BTN' | 'SB' | 'BB';
 type PlayerType =
   | 'Unknown'
   | 'TAG Reg'
@@ -48,37 +48,29 @@ type DecisionRecord = {
   timestamp: string;
 };
 
-const POSITIONS: Position[] = ['UTG', 'EP', 'MP', 'CO', 'BTN', 'SB', 'BB'];
+const POSITIONS: Position[] = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
 
 const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
-  BB: { left: '50%', top: '85%' },
-  UTG: { left: '30%', top: '75%' },
-  EP: { left: '10%', top: '50%' },
-  MP: { left: '30%', top: '25%' },
-  CO: { left: '50%', top: '15%' },
-  BTN: { left: '70%', top: '25%' },
-  SB: { left: '80%', top: '70%' }
+  BB: { left: '50%', top: '83%' },
+  UTG: { left: '22%', top: '66%' },
+  MP: { left: '20%', top: '34%' },
+  CO: { left: '50%', top: '17%' },
+  BTN: { left: '79%', top: '34%' },
+  SB: { left: '78%', top: '66%' }
 };
 
 const TIMER_PRESETS = [60, 30, 15, 10];
-
-const ACTIONS = [
-  { label: 'Fold', color: 'bg-red-600' },
-  { label: 'Call', color: 'bg-blue-600' },
-  { label: 'Raise 3x', color: 'bg-green-600' }
-] as const;
 
 const STACKS = [25, 40, 100, 200];
 const STORAGE_KEY = 'preflop-trainer-decisions';
 
 const POSITION_INDEX: Record<Position, number> = {
   UTG: 0,
-  EP: 1,
-  MP: 2,
-  CO: 3,
-  BTN: 4,
-  SB: 5,
-  BB: 6
+  MP: 1,
+  CO: 2,
+  BTN: 3,
+  SB: 4,
+  BB: 5
 };
 
 const POSITION_OPEN_RANGES: Record<Exclude<Position, 'BB'>, string[]> = {
@@ -87,18 +79,13 @@ const POSITION_OPEN_RANGES: Record<Exclude<Position, 'BB'>, string[]> = {
     'AKs', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs',
     'AKo', 'AQo'
   ],
-  EP: [
+  MP: [
     'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77',
     'AKs', 'AQs', 'AJs', 'ATs', 'A5s', 'KQs', 'KJs', 'QJs', 'JTs', 'T9s',
     'AKo', 'AQo', 'AJo', 'KQo'
   ],
-  MP: [
-    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66',
-    'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A5s', 'KQs', 'KJs', 'KTs', 'QJs', 'JTs', 'T9s', '98s',
-    'AKo', 'AQo', 'AJo', 'KQo'
-  ],
   CO: [
-    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66', '55',
+    'AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', '77', '66',
     'AKs', 'AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A5s', 'A4s', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s',
     'AKo', 'AQo', 'AJo', 'ATo', 'KQo', 'KJo', 'QJo'
   ],
@@ -118,7 +105,6 @@ const POSITION_OPEN_RANGES: Record<Exclude<Position, 'BB'>, string[]> = {
 
 const HERO_RESPONSE_RANGE: Record<Position, string[]> = {
   UTG: POSITION_OPEN_RANGES.UTG,
-  EP: POSITION_OPEN_RANGES.EP,
   MP: POSITION_OPEN_RANGES.MP,
   CO: [...POSITION_OPEN_RANGES.CO, 'A7s', 'KTo'],
   BTN: [...POSITION_OPEN_RANGES.BTN, 'A8o', 'KTo', 'QTo', '97s'],
@@ -270,11 +256,10 @@ function pickBehaviorDrivenLimper(table: TablePlayer[], heroPos: Position) {
 
 function createOpenScenario(): Scenario {
   const heroPos = weightedPick<Position>([
-    { item: 'CO', weight: 25 },
-    { item: 'BTN', weight: 32 },
+    { item: 'CO', weight: 30 },
+    { item: 'BTN', weight: 35 },
     { item: 'SB', weight: 18 },
-    { item: 'MP', weight: 15 },
-    { item: 'EP', weight: 10 }
+    { item: 'MP', weight: 17 }
   ]);
   const heroStack = randomItem(STACKS);
   const table = generateTable(heroPos, heroStack);
@@ -359,7 +344,7 @@ function createLimpIsoScenario(): Scenario {
 
 function createMultiwayScenario(): Scenario {
   const heroPos: Position = 'BTN';
-  const openerOptions: Exclude<Position, 'BB'>[] = ['UTG', 'EP', 'MP', 'CO'];
+  const openerOptions: Exclude<Position, 'BB'>[] = ['UTG', 'MP', 'CO'];
   const heroStack = randomItem(STACKS);
   const table = generateTable(heroPos, heroStack);
   const behaviorOpener = pickBehaviorDrivenOpener(table, heroPos) as Exclude<Position, 'BB'>;
@@ -455,6 +440,7 @@ function PokerTrainer() {
   const [timerMax, setTimerMax] = useState(60);
   const [isPaused, setIsPaused] = useState(true);
   const [decisionCount, setDecisionCount] = useState(0);
+  const [raiseSize, setRaiseSize] = useState('3');
 
   const loadNewHand = useCallback(() => {
     setScenario(generateScenario());
@@ -509,12 +495,15 @@ function PokerTrainer() {
 
   if (!scenario) return null;
 
+  const raiseDisplay = Number.parseFloat(raiseSize);
+  const normalizedRaise = Number.isFinite(raiseDisplay) && raiseDisplay > 0 ? raiseDisplay : 3;
+
   return (
-    <div className="min-h-screen bg-slate-900 p-8 text-white">
-      <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
+    <div className="min-h-screen bg-slate-950 px-4 py-5 text-white">
+      <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-blue-400">PRE-FLOP VOLUMIZER</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="text-[1.75rem] font-extrabold leading-none tracking-tight text-blue-400">PRE-FLOP VOLUMIZER</h1>
+          <p className="mt-2 text-sm text-slate-400">
             {decisionCount} decisions stored locally
           </p>
         </div>
@@ -524,113 +513,143 @@ function PokerTrainer() {
             <button
               key={seconds}
               onClick={() => setTimerMax(seconds)}
-              className={`rounded px-3 py-1 text-xs ${
-                timerMax === seconds ? 'bg-blue-500' : 'bg-slate-700'
+              className={`rounded-md px-3 py-2 text-xs font-semibold ${
+                timerMax === seconds ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-300'
               }`}
             >
               {seconds}s
             </button>
           ))}
         </div>
-      </div>
 
-      <div className="relative mx-auto h-[500px] max-w-4xl">
-        <div className="absolute inset-0 rounded-[200px] border-[12px] border-emerald-950 bg-emerald-800" />
+        <div className="relative mx-auto aspect-[0.8] w-full max-w-sm overflow-hidden rounded-[46%] border-[10px] border-emerald-950 bg-emerald-900 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+          <div className="absolute inset-[2.5%] rounded-[44%] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.22),_rgba(5,150,105,0.1)_45%,_rgba(6,78,59,0.08)_100%)]" />
 
-        {POSITIONS.map((pos) => {
-          const player = scenario.table.find((entry) => entry.position === pos)!;
-          const action = scenario.history.find((entry) => entry.pos === pos);
-          const isHero = scenario.heroPos === pos;
+          {POSITIONS.map((pos) => {
+            const player = scenario.table.find((entry) => entry.position === pos)!;
+            const action = scenario.history.find((entry) => entry.pos === pos);
+            const isHero = scenario.heroPos === pos;
 
-          let actionLabel = '';
-          let actionStyle = '';
+            let actionLabel = '';
+            let actionStyle = '';
 
-          if (action?.type === 'RAISE') {
-            actionLabel = `Raise ${action.amount}x`;
-            actionStyle = 'scale-105 border-red-400 bg-red-900/70';
-          }
+            if (action?.type === 'RAISE') {
+              actionLabel = `Raise ${action.amount}x`;
+              actionStyle = 'scale-105 border-red-400 bg-red-900/70';
+            }
 
-          if (action?.type === 'CALL') {
-            actionLabel = 'Call';
-            actionStyle = 'scale-105 border-blue-400 bg-blue-900/70';
-          }
+            if (action?.type === 'CALL') {
+              actionLabel = 'Call';
+              actionStyle = 'scale-105 border-blue-400 bg-blue-900/70';
+            }
 
-          if (action?.type === 'LIMP') {
-            actionLabel = 'Limp';
-            actionStyle = 'scale-105 border-yellow-400 bg-yellow-900/70';
-          }
+            if (action?.type === 'LIMP') {
+              actionLabel = 'Limp';
+              actionStyle = 'scale-105 border-yellow-400 bg-yellow-900/70';
+            }
 
-          return (
-            <div
-              key={pos}
-              className={`absolute w-28 rounded-lg border-2 p-3 text-center transition-all duration-200 ${
-                isHero
-                  ? 'scale-110 border-yellow-400 bg-slate-800'
-                  : action
-                    ? actionStyle
-                    : 'border-emerald-700 bg-emerald-900/50'
-              }`}
-              style={{
-                ...SEAT_POSITIONS[pos],
-                transform: 'translate(-50%, -50%)'
-              }}
-            >
-              <div className="text-xs">{pos}</div>
-              {!isHero && <div className="text-[10px] opacity-70">{player.type}</div>}
-              <div className="text-[11px]">{player.stack}BB</div>
-              {isHero && <div className="mt-1 text-sm">{scenario.hand.join(' ')}</div>}
-              {action && <div className="mt-1 text-[10px]">{actionLabel}</div>}
+            return (
+              <div
+                key={pos}
+                className={`absolute w-[5.6rem] rounded-2xl border p-2 text-center shadow-sm transition-all duration-200 ${
+                  isHero
+                    ? 'scale-110 border-yellow-300 bg-slate-800/95'
+                    : action
+                      ? actionStyle
+                      : 'border-emerald-700/80 bg-emerald-950/35'
+                }`}
+                style={{
+                  ...SEAT_POSITIONS[pos],
+                  transform: 'translate(-50%, -50%)'
+                }}
+              >
+                <div className="text-[11px] font-semibold">{pos}</div>
+                {!isHero && <div className="mt-1 text-[9px] leading-tight opacity-75">{player.type}</div>}
+                <div className="mt-1 text-[10px] font-medium">{player.stack}BB</div>
+                {isHero && <div className="mt-1 text-sm font-bold">{scenario.hand.join(' ')}</div>}
+                {action && <div className="mt-1 text-[9px] font-semibold">{actionLabel}</div>}
+              </div>
+            );
+          })}
+
+          <div className="absolute left-1/2 top-1/2 w-32 -translate-x-1/2 -translate-y-1/2 text-center">
+            <div className="text-[11px] uppercase tracking-[0.25em] text-emerald-100/65">Pot Size</div>
+            <div className="mt-2 text-4xl font-bold leading-none">{scenario.pot} BB</div>
+            <div className="mt-3 text-xs text-slate-200/80">
+              {scenario.playersLeft} left to act
             </div>
-          );
-        })}
-
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 text-center">
-          <div className="text-sm opacity-60">POT SIZE</div>
-          <div className="text-3xl">{scenario.pot} BB</div>
-          <div className="mt-3 text-xs text-slate-300">
-            {scenario.playersLeft} left to act
           </div>
         </div>
-      </div>
 
-      <div className="mt-6 text-center text-lg">{scenario.text}</div>
+        <div className="mt-5 text-center text-lg leading-snug text-slate-100">{scenario.text}</div>
 
-      <div className="mx-auto mt-2 flex max-w-xl justify-center gap-4 text-xs uppercase tracking-wide text-slate-400">
-        <span>{scenario.scenarioType.replace('_', ' ')}</span>
-        <span>{scenario.heroPos}</span>
-        <span>{scenario.handLabel}</span>
-      </div>
-
-      <div className="mx-auto mt-6 max-w-xl">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-          <div
-            className={`h-full transition-all duration-1000 ${
-              isPaused ? 'bg-gray-500' : 'bg-blue-400'
-            }`}
-            style={{ width: `${(timeLeft / timerMax) * 100}%` }}
-          />
+        <div className="mt-2 flex justify-center gap-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
+          <span>{scenario.scenarioType.replaceAll('_', ' ')}</span>
+          <span>{scenario.heroPos}</span>
+          <span>{scenario.handLabel}</span>
         </div>
 
-        <div className="mt-4 flex justify-center">
+        <div className="mt-6">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+            <div
+              className={`h-full transition-all duration-1000 ${
+                isPaused ? 'bg-gray-500' : 'bg-blue-400'
+              }`}
+              style={{ width: `${(timeLeft / timerMax) * 100}%` }}
+            />
+          </div>
+
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              onClick={() => setIsPaused((paused) => !paused)}
+              className="rounded-xl bg-amber-600 px-5 py-3 text-base font-bold text-white"
+            >
+              {isPaused ? 'Resume' : 'Pause'}
+            </button>
+            <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300">
+              {timeLeft}s
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Raise Size
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              step="0.5"
+              min="1"
+              inputMode="decimal"
+              value={raiseSize}
+              onChange={(event) => setRaiseSize(event.target.value)}
+              className="h-12 w-24 rounded-xl border border-slate-700 bg-slate-950 px-4 text-lg font-bold text-white outline-none"
+            />
+            <span className="text-sm font-semibold text-slate-400">x the blind/open size</span>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <button
-            onClick={() => setIsPaused((paused) => !paused)}
-            className="rounded-lg bg-yellow-600 px-4 py-2 font-bold"
+            onClick={() => recordDecision('Fold')}
+            className="rounded-2xl bg-red-600 py-4 text-xl font-bold text-white"
           >
-            {isPaused ? 'Resume' : 'Pause'}
+            Fold
+          </button>
+          <button
+            onClick={() => recordDecision('Call')}
+            className="rounded-2xl bg-blue-600 py-4 text-xl font-bold text-white"
+          >
+            Call
+          </button>
+          <button
+            onClick={() => recordDecision(`Raise ${normalizedRaise}x`)}
+            className="col-span-2 rounded-2xl bg-green-600 py-4 text-xl font-bold text-white"
+          >
+            Raise {normalizedRaise}x
           </button>
         </div>
-      </div>
-
-      <div className="mx-auto mt-8 grid max-w-xl grid-cols-3 gap-4">
-        {ACTIONS.map((action) => (
-          <button
-            key={action.label}
-            onClick={() => recordDecision(action.label)}
-            className={`${action.color} rounded-xl py-4 text-xl font-bold`}
-          >
-            {action.label}
-          </button>
-        ))}
       </div>
     </div>
   );
