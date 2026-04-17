@@ -12,7 +12,7 @@ type PlayerType =
   | 'Aggro Fish'
   | 'Whale'
   | 'You';
-type ScenarioType = 'open' | 'vs_open' | 'limp_iso' | 'multiway';
+type ScenarioType = 'open' | 'vs_open' | 'limp_iso' | 'multiway' | 'facing_3bet';
 type ActionType = 'FOLD' | 'CALL' | 'RAISE' | 'LIMP';
 
 type TablePlayer = {
@@ -188,6 +188,7 @@ function getFacingRange(heroPos: Position, scenarioType: ScenarioType) {
   if (scenarioType === 'open') return base;
   if (scenarioType === 'limp_iso') return base.slice(0, clamp(base.length - 10, 12, base.length));
   if (scenarioType === 'multiway') return base.slice(0, clamp(base.length - 16, 10, base.length));
+  if (scenarioType === 'facing_3bet') return base.slice(0, clamp(base.length - 22, 8, base.length));
   return base.slice(0, clamp(base.length - 8, 12, base.length));
 }
 
@@ -395,17 +396,43 @@ function createMultiwayScenario(): Scenario {
   };
 }
 
+function createFacing3BetScenario(): Scenario {
+  const heroPos: Position = 'CO';
+  const heroStack = randomItem(STACKS);
+  const table = generateTable(heroPos, heroStack);
+  const button = getPlayer(table, 'BTN');
+  const handData = generateHandFromPool(getFacingRange(heroPos, 'facing_3bet'));
+
+  return {
+    heroPos,
+    heroStack,
+    hand: handData.cards,
+    handLabel: handData.label,
+    history: [
+      { pos: heroPos, type: 'RAISE', amount: 3 },
+      { pos: 'BTN', type: 'RAISE', amount: 9 }
+    ],
+    pot: 13.5,
+    table,
+    text: `You open CO to 3BB, BTN (${button.type}) 3-bets to 9BB, blinds fold. Action back on you.`,
+    scenarioType: 'facing_3bet',
+    playersLeft: 0
+  };
+}
+
 function generateScenario(): Scenario {
   const scenarioType = weightedPick<ScenarioType>([
-    { item: 'open', weight: 36 },
-    { item: 'vs_open', weight: 32 },
-    { item: 'limp_iso', weight: 27 },
-    { item: 'multiway', weight: 5 }
+    { item: 'open', weight: 31 },
+    { item: 'vs_open', weight: 28 },
+    { item: 'limp_iso', weight: 24 },
+    { item: 'multiway', weight: 5 },
+    { item: 'facing_3bet', weight: 12 }
   ]);
 
   if (scenarioType === 'open') return createOpenScenario();
   if (scenarioType === 'vs_open') return createVsOpenScenario();
   if (scenarioType === 'limp_iso') return createLimpIsoScenario();
+  if (scenarioType === 'facing_3bet') return createFacing3BetScenario();
   return createMultiwayScenario();
 }
 
