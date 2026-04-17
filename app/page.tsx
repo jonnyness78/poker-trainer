@@ -499,11 +499,11 @@ function PokerTrainer() {
   const normalizedRaise = Number.isFinite(raiseDisplay) && raiseDisplay > 0 ? raiseDisplay : 3;
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-5 text-white">
-      <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
+    <div className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
+      <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-2">
         <div>
-          <h1 className="text-[1.75rem] font-extrabold leading-none tracking-tight text-blue-400">PRE-FLOP VOLUMIZER</h1>
-          <p className="mt-2 text-sm text-slate-400">
+          <h1 className="text-[1.45rem] font-extrabold leading-none tracking-tight text-blue-400">PRE-FLOP VOLUMIZER</h1>
+          <p className="mt-1 text-xs text-slate-400">
             {decisionCount} decisions stored locally
           </p>
         </div>
@@ -513,7 +513,7 @@ function PokerTrainer() {
             <button
               key={seconds}
               onClick={() => setTimerMax(seconds)}
-              className={`rounded-md px-3 py-2 text-xs font-semibold ${
+              className={`rounded-md px-3 py-1.5 text-[11px] font-semibold ${
                 timerMax === seconds ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-300'
               }`}
             >
@@ -522,7 +522,7 @@ function PokerTrainer() {
           ))}
         </div>
 
-        <div className="relative mx-auto aspect-[0.8] w-full max-w-sm overflow-hidden rounded-[46%] border-[10px] border-emerald-950 bg-emerald-900 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+        <div className="relative mx-auto min-h-0 flex-1 overflow-hidden rounded-[46%] border-[8px] border-emerald-950 bg-emerald-900 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-[2.5%] rounded-[44%] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.22),_rgba(5,150,105,0.1)_45%,_rgba(6,78,59,0.08)_100%)]" />
 
           {POSITIONS.map((pos) => {
@@ -551,7 +551,7 @@ function PokerTrainer() {
             return (
               <div
                 key={pos}
-                className={`absolute w-[5.6rem] rounded-2xl border p-2 text-center shadow-sm transition-all duration-200 ${
+                className={`absolute w-[4.9rem] rounded-[1rem] border px-1.5 py-2 text-center shadow-sm transition-all duration-200 ${
                   isHero
                     ? 'scale-110 border-yellow-300 bg-slate-800/95'
                     : action
@@ -563,33 +563,33 @@ function PokerTrainer() {
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="text-[11px] font-semibold">{pos}</div>
-                {!isHero && <div className="mt-1 text-[9px] leading-tight opacity-75">{player.type}</div>}
-                <div className="mt-1 text-[10px] font-medium">{player.stack}BB</div>
-                {isHero && <div className="mt-1 text-sm font-bold">{scenario.hand.join(' ')}</div>}
-                {action && <div className="mt-1 text-[9px] font-semibold">{actionLabel}</div>}
+                <div className="text-[10px] font-semibold">{pos}</div>
+                {!isHero && <div className="mt-0.5 text-[8px] leading-tight opacity-75">{player.type}</div>}
+                <div className="mt-0.5 text-[9px] font-medium">{player.stack}BB</div>
+                {isHero && <div className="mt-1 text-[0.95rem] font-bold">{scenario.hand.join(' ')}</div>}
+                {action && <div className="mt-1 text-[8px] font-semibold">{actionLabel}</div>}
               </div>
             );
           })}
 
-          <div className="absolute left-1/2 top-1/2 w-32 -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-[11px] uppercase tracking-[0.25em] text-emerald-100/65">Pot Size</div>
-            <div className="mt-2 text-4xl font-bold leading-none">{scenario.pot} BB</div>
-            <div className="mt-3 text-xs text-slate-200/80">
+          <div className="absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 text-center">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-100/65">Pot Size</div>
+            <div className="mt-1 text-[2rem] font-bold leading-none">{scenario.pot} BB</div>
+            <div className="mt-2 text-[11px] text-slate-200/80">
               {scenario.playersLeft} left to act
             </div>
           </div>
         </div>
 
-        <div className="mt-5 text-center text-lg leading-snug text-slate-100">{scenario.text}</div>
+        <div className="text-center text-[1rem] leading-snug text-slate-100">{scenario.text}</div>
 
-        <div className="mt-2 flex justify-center gap-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
+        <div className="flex justify-center gap-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
           <span>{scenario.scenarioType.replaceAll('_', ' ')}</span>
           <span>{scenario.heroPos}</span>
           <span>{scenario.handLabel}</span>
         </div>
 
-        <div className="mt-6">
+        <div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
             <div
               className={`h-full transition-all duration-1000 ${
@@ -599,21 +599,21 @@ function PokerTrainer() {
             />
           </div>
 
-          <div className="mt-4 flex items-center justify-center gap-3">
+          <div className="mt-3 flex items-center justify-center gap-3">
             <button
               onClick={() => setIsPaused((paused) => !paused)}
-              className="rounded-xl bg-amber-600 px-5 py-3 text-base font-bold text-white"
+              className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white"
             >
               {isPaused ? 'Resume' : 'Pause'}
             </button>
-            <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300">
+            <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300">
               {timeLeft}s
             </div>
           </div>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
+          <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
             Raise Size
           </label>
           <div className="flex items-center gap-3">
@@ -624,28 +624,28 @@ function PokerTrainer() {
               inputMode="decimal"
               value={raiseSize}
               onChange={(event) => setRaiseSize(event.target.value)}
-              className="h-12 w-24 rounded-xl border border-slate-700 bg-slate-950 px-4 text-lg font-bold text-white outline-none"
+              className="h-11 w-24 rounded-xl border border-slate-700 bg-slate-950 px-4 text-base font-bold text-white outline-none"
             />
-            <span className="text-sm font-semibold text-slate-400">x the blind/open size</span>
+            <span className="text-xs font-semibold text-slate-400">x the blind/open size</span>
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 pb-[max(env(safe-area-inset-bottom),0px)]">
           <button
             onClick={() => recordDecision('Fold')}
-            className="rounded-2xl bg-red-600 py-4 text-xl font-bold text-white"
+            className="rounded-2xl bg-red-600 py-3.5 text-lg font-bold text-white"
           >
             Fold
           </button>
           <button
             onClick={() => recordDecision('Call')}
-            className="rounded-2xl bg-blue-600 py-4 text-xl font-bold text-white"
+            className="rounded-2xl bg-blue-600 py-3.5 text-lg font-bold text-white"
           >
             Call
           </button>
           <button
             onClick={() => recordDecision(`Raise ${normalizedRaise}x`)}
-            className="col-span-2 rounded-2xl bg-green-600 py-4 text-xl font-bold text-white"
+            className="col-span-2 rounded-2xl bg-green-600 py-3.5 text-lg font-bold text-white"
           >
             Raise {normalizedRaise}x
           </button>
