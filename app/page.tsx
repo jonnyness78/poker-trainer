@@ -142,13 +142,13 @@ const PLAYER_PROFILES: Record<Exclude<PlayerType, 'You'>, {
   flatVsOpen: number;
   raiseSizes: number[];
 }> = {
-  Unknown: { limpChance: 0.08, openRangeShift: 0, flatVsOpen: 0.18, raiseSizes: [2.5, 3] },
-  'TAG Reg': { limpChance: 0.02, openRangeShift: -6, flatVsOpen: 0.12, raiseSizes: [2.2, 2.5] },
-  'LAG Reg': { limpChance: 0.03, openRangeShift: 8, flatVsOpen: 0.18, raiseSizes: [2.2, 2.5, 3] },
-  'Trying Rec': { limpChance: 0.12, openRangeShift: 4, flatVsOpen: 0.28, raiseSizes: [2.5, 3] },
-  'Passive Fish': { limpChance: 0.42, openRangeShift: 10, flatVsOpen: 0.4, raiseSizes: [3] },
-  'Aggro Fish': { limpChance: 0.1, openRangeShift: 12, flatVsOpen: 0.22, raiseSizes: [3, 3.5, 4.5] },
-  Whale: { limpChance: 0.38, openRangeShift: 18, flatVsOpen: 0.45, raiseSizes: [3, 4, 5] }
+  Unknown: { limpChance: 0.14, openRangeShift: 0, flatVsOpen: 0.18, raiseSizes: [2.5, 3] },
+  'TAG Reg': { limpChance: 0.03, openRangeShift: -6, flatVsOpen: 0.12, raiseSizes: [2.2, 2.5] },
+  'LAG Reg': { limpChance: 0.06, openRangeShift: 8, flatVsOpen: 0.18, raiseSizes: [2.2, 2.5, 3] },
+  'Trying Rec': { limpChance: 0.2, openRangeShift: 4, flatVsOpen: 0.28, raiseSizes: [2.5, 3] },
+  'Passive Fish': { limpChance: 0.58, openRangeShift: 10, flatVsOpen: 0.4, raiseSizes: [3] },
+  'Aggro Fish': { limpChance: 0.16, openRangeShift: 12, flatVsOpen: 0.22, raiseSizes: [3, 3.5, 4.5] },
+  Whale: { limpChance: 0.5, openRangeShift: 18, flatVsOpen: 0.45, raiseSizes: [3, 4, 5] }
 };
 
 function randomItem<T>(arr: T[]): T {
@@ -397,9 +397,9 @@ function createMultiwayScenario(): Scenario {
 
 function generateScenario(): Scenario {
   const scenarioType = weightedPick<ScenarioType>([
-    { item: 'open', weight: 42 },
-    { item: 'vs_open', weight: 36 },
-    { item: 'limp_iso', weight: 17 },
+    { item: 'open', weight: 36 },
+    { item: 'vs_open', weight: 32 },
+    { item: 'limp_iso', weight: 27 },
     { item: 'multiway', weight: 5 }
   ]);
 
@@ -424,15 +424,15 @@ function readStoredDecisions(): DecisionRecord[] {
 
 function PokerTrainer() {
   const [scenario, setScenario] = useState<Scenario | null>(null);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [timerMax, setTimerMax] = useState(30);
-  const [isPaused, setIsPaused] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [timerMax, setTimerMax] = useState(60);
+  const [isPaused, setIsPaused] = useState(true);
   const [decisionCount, setDecisionCount] = useState(0);
 
   const loadNewHand = useCallback(() => {
     setScenario(generateScenario());
     setTimeLeft(timerMax);
-    setIsPaused(false);
+    setIsPaused(true);
   }, [timerMax]);
 
   const recordDecision = useCallback((actionLabel: string) => {
