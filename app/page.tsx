@@ -447,11 +447,22 @@ function readStoredReviewHands(): Scenario[] {
   }
 }
 
+function getScenarioFingerprint(scenario: Scenario) {
+  return JSON.stringify({
+    heroPos: scenario.heroPos,
+    handLabel: scenario.handLabel,
+    history: scenario.history,
+    pot: scenario.pot,
+    text: scenario.text
+  });
+}
+
 function PokerTrainer() {
   const [scenarioHistory, setScenarioHistory] = useState<Scenario[]>([]);
   const [currentScenarioIndex, setCurrentScenarioIndex] = useState(0);
   const [decisionCount, setDecisionCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+  const [reviewHands, setReviewHands] = useState<Scenario[]>([]);
   const scenario = scenarioHistory[currentScenarioIndex] ?? null;
 
   const loadNewHand = useCallback(() => {
@@ -480,14 +491,19 @@ function PokerTrainer() {
     loadNewHand();
   }, [loadNewHand, scenario]);
 
-  const saveHandForReview = useCallback(() => {
+  const toggleHandForReview = useCallback((checked: boolean) => {
     if (!scenario || typeof window === 'undefined') return;
 
-    const existing = readStoredReviewHands();
-    const next = [scenario, ...existing].slice(0, 100);
+    const fingerprint = getScenarioFingerprint(scenario);
+    const filtered = reviewHands.filter(
+      (savedScenario) => getScenarioFingerprint(savedScenario) !== fingerprint
+    );
+    const next = checked ? [scenario, ...filtered].slice(0, 100) : filtered;
+
     window.localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(next));
+    setReviewHands(next);
     setReviewCount(next.length);
-  }, [scenario]);
+  }, [reviewHands, scenario]);
 
   const goToPreviousHand = useCallback(() => {
     setCurrentScenarioIndex((current) => Math.max(0, current - 1));
@@ -495,7 +511,9 @@ function PokerTrainer() {
 
   useEffect(() => {
     setDecisionCount(readStoredDecisions().length);
-    setReviewCount(readStoredReviewHands().length);
+    const storedReviewHands = readStoredReviewHands();
+    setReviewHands(storedReviewHands);
+    setReviewCount(storedReviewHands.length);
   }, []);
 
   useEffect(() => {
@@ -503,6 +521,10 @@ function PokerTrainer() {
   }, [loadNewHand]);
 
   if (!scenario) return null;
+
+  const isSavedForReview = reviewHands.some(
+    (savedScenario) => getScenarioFingerprint(savedScenario) === getScenarioFingerprint(scenario)
+  );
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
@@ -549,10 +571,10 @@ function PokerTrainer() {
                 }}
               >
                 <div className="text-[17px] font-semibold tracking-[0.06em]">{pos}</div>
-                {!isHero && <div className="mt-1 text-[10px] leading-tight opacity-90">{player.type}</div>}
-                <div className="mt-1 text-[11px] font-medium">{player.stack}BB</div>
+                {!isHero && <div className="mt-1 text-[15px] leading-tight opacity-90">{player.type}</div>}
+                <div className="mt-1 text-[15px] font-medium">{player.stack}BB</div>
                 {isHero && <div className="mt-2 text-[1.05rem] font-bold">{scenario.hand.join(' ')}</div>}
-                {action && <div className="mt-1.5 text-[10px] font-semibold">{actionLabel}</div>}
+                {action && <div className="mt-1.5 text-[15px] font-semibold">{actionLabel}</div>}
               </div>
             );
           })}
@@ -564,7 +586,7 @@ function PokerTrainer() {
 
         <div className="text-center text-[1rem] leading-snug text-slate-100">{scenario.text}</div>
 
-        <div className="flex justify-center gap-3 text-[10px] uppercase tracking-[0.18em] text-slate-500">
+        <div className="flex justify-center gap-3 text-[15px] uppercase tracking-[0.08em] text-slate-500">
           <span>{scenario.scenarioType.replaceAll('_', ' ')}</span>
           <span>{scenario.heroPos}</span>
           <span>{scenario.handLabel}</span>
@@ -574,19 +596,22 @@ function PokerTrainer() {
           <button
             onClick={goToPreviousHand}
             disabled={currentScenarioIndex === 0}
-            className="rounded-2xl border border-slate-700 bg-slate-900/80 py-3 text-sm font-bold text-white disabled:opacity-40"
+            className="rounded-2xl border border-slate-700 bg-slate-900/80 py-3 text-[15px] font-bold text-white disabled:opacity-40"
           >
             Previous Hand
           </button>
-          <button
-            onClick={saveHandForReview}
-            className="rounded-2xl border border-slate-700 bg-slate-900/80 py-3 text-sm font-bold text-white"
-          >
-            Save For Review
-          </button>
+          <label className="flex items-center justify-center gap-3 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-3 text-[15px] font-bold text-white">
+            <input
+              type="checkbox"
+              checked={isSavedForReview}
+              onChange={(event) => toggleHandForReview(event.target.checked)}
+              className="h-5 w-5 rounded border-slate-500 bg-slate-950 accent-emerald-500"
+            />
+            <span>Save For Review</span>
+          </label>
         </div>
 
-        <div className="flex justify-center gap-4 text-xs font-semibold text-slate-400">
+        <div className="flex justify-center gap-4 text-[15px] font-semibold text-slate-400">
           <span>{decisionCount} decisions</span>
           <span>{reviewCount} for review</span>
         </div>
