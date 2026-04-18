@@ -520,6 +520,20 @@ function PokerTrainer() {
     loadNewHand();
   }, [loadNewHand]);
 
+  useEffect(() => {
+    const nudgeScroll = () => {
+      window.scrollTo(0, 1);
+    };
+
+    const frame = window.requestAnimationFrame(() => {
+      window.setTimeout(nudgeScroll, 120);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
   if (!scenario) return null;
 
   const isSavedForReview = reviewHands.some(
@@ -527,8 +541,8 @@ function PokerTrainer() {
   );
 
   return (
-    <div className="min-h-[115svh] overflow-y-auto bg-slate-950 px-3 py-3 text-white">
-      <div className="mx-auto flex w-full max-w-[26.5rem] flex-col gap-3 pb-[max(20svh,6rem)]">
+    <div className="min-h-[135svh] overflow-y-auto bg-slate-950 px-3 pt-[8svh] pb-3 text-white [webkit-overflow-scrolling:touch]">
+      <div className="mx-auto flex w-full max-w-[26.5rem] flex-col gap-3 pb-[max(28svh,8rem)]">
         <div className="relative h-[min(52vh,21rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 rounded-[1.7rem] border border-emerald-400/15" />
 
