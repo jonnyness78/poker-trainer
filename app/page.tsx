@@ -51,9 +51,9 @@ type DecisionRecord = {
 const POSITIONS: Position[] = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
 
 const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
-  MP: { left: '18.5%', top: '20%' },
-  CO: { left: '50%', top: '20%' },
-  BTN: { left: '81.5%', top: '20%' },
+  MP: { left: '18.5%', top: '24%' },
+  CO: { left: '50%', top: '24%' },
+  BTN: { left: '81.5%', top: '24%' },
   UTG: { left: '18.5%', top: '77%' },
   BB: { left: '50%', top: '77%' },
   SB: { left: '81.5%', top: '77%' }
@@ -475,7 +475,7 @@ function PokerTrainer() {
   return (
     <div className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
       <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3">
-        <div className="relative h-[min(40vh,16rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+        <div className="relative h-[min(46vh,18.4rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 rounded-[1.7rem] border border-emerald-400/15" />
 
           {POSITIONS.map((pos) => {
