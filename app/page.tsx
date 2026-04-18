@@ -51,12 +51,12 @@ type DecisionRecord = {
 const POSITIONS: Position[] = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
 
 const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
-  BB: { left: '50%', top: '81%' },
-  UTG: { left: '12%', top: '57%' },
-  MP: { left: '25%', top: '18%' },
-  CO: { left: '50%', top: '9%' },
-  BTN: { left: '75%', top: '18%' },
-  SB: { left: '88%', top: '57%' }
+  MP: { left: '20%', top: '16%' },
+  CO: { left: '50%', top: '16%' },
+  BTN: { left: '80%', top: '16%' },
+  UTG: { left: '20%', top: '76%' },
+  BB: { left: '50%', top: '76%' },
+  SB: { left: '80%', top: '76%' }
 };
 
 const STACKS = [25, 40, 100, 200];
@@ -525,10 +525,10 @@ function PokerTrainer() {
             );
           })}
 
-          <div className="absolute left-1/2 top-1/2 w-32 -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/65">Pot Size</div>
-            <div className="mt-2 text-[2rem] font-bold leading-none">{scenario.pot} BB</div>
-            <div className="mt-1 text-[12px] text-slate-200/80">
+          <div className="absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 text-center">
+            <div className="text-[9px] uppercase tracking-[0.18em] text-emerald-100/65">Pot Size</div>
+            <div className="mt-1 text-[1.6rem] font-bold leading-none">{scenario.pot} BB</div>
+            <div className="mt-1 text-[11px] text-slate-200/80">
               {scenario.playersLeft} left to act
             </div>
           </div>
