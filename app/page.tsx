@@ -51,12 +51,12 @@ type DecisionRecord = {
 const POSITIONS: Position[] = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
 
 const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
-  BB: { left: '50%', top: '84%' },
-  UTG: { left: '18%', top: '63%' },
-  MP: { left: '18%', top: '20%' },
-  CO: { left: '50%', top: '11%' },
-  BTN: { left: '82%', top: '20%' },
-  SB: { left: '82%', top: '63%' }
+  BB: { left: '50%', top: '81%' },
+  UTG: { left: '12%', top: '57%' },
+  MP: { left: '25%', top: '18%' },
+  CO: { left: '50%', top: '9%' },
+  BTN: { left: '75%', top: '18%' },
+  SB: { left: '88%', top: '57%' }
 };
 
 const STACKS = [25, 40, 100, 200];
@@ -434,17 +434,12 @@ function readStoredDecisions(): DecisionRecord[] {
 
 function PokerTrainer() {
   const [scenario, setScenario] = useState<Scenario | null>(null);
-  const [timeLeft, setTimeLeft] = useState(60);
-  const [timerMax, setTimerMax] = useState(60);
-  const [isPaused, setIsPaused] = useState(true);
   const [decisionCount, setDecisionCount] = useState(0);
   const [raiseSize, setRaiseSize] = useState('3');
 
   const loadNewHand = useCallback(() => {
     setScenario(generateScenario());
-    setTimeLeft(timerMax);
-    setIsPaused(true);
-  }, [timerMax]);
+  }, []);
 
   const recordDecision = useCallback((actionLabel: string) => {
     if (!scenario || typeof window === 'undefined') return;
@@ -469,25 +464,6 @@ function PokerTrainer() {
   }, []);
 
   useEffect(() => {
-    setTimeLeft(timerMax);
-  }, [timerMax]);
-
-  useEffect(() => {
-    if (isPaused || !scenario) return;
-
-    if (timeLeft <= 0) {
-      loadNewHand();
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      setTimeLeft((current) => current - 1);
-    }, 1000);
-
-    return () => window.clearTimeout(timeout);
-  }, [timeLeft, isPaused, scenario, loadNewHand]);
-
-  useEffect(() => {
     loadNewHand();
   }, [loadNewHand]);
 
@@ -499,7 +475,7 @@ function PokerTrainer() {
   return (
     <div className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
       <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3">
-        <div className="relative flex-1 overflow-hidden rounded-[2rem] border border-emerald-800/60 bg-[linear-gradient(180deg,rgba(6,95,70,0.98),rgba(5,70,52,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+        <div className="relative h-[min(39vh,15.5rem)] overflow-hidden rounded-[2rem] border border-emerald-800/60 bg-[linear-gradient(180deg,rgba(6,95,70,0.98),rgba(5,70,52,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.12),rgba(16,185,129,0.02)_45%,transparent_75%)]" />
 
           {POSITIONS.map((pos) => {
@@ -528,7 +504,7 @@ function PokerTrainer() {
             return (
               <div
                 key={pos}
-                className={`absolute w-[5.8rem] rounded-[1.1rem] border px-2 py-2.5 text-center shadow-sm transition-all duration-200 ${
+                className={`absolute w-[6.15rem] rounded-[1.1rem] border px-2 py-2.5 text-center shadow-sm transition-all duration-200 ${
                   isHero
                     ? 'scale-110 border-yellow-300 bg-slate-800/95'
                     : action
@@ -540,9 +516,9 @@ function PokerTrainer() {
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="text-[11px] font-semibold tracking-[0.08em]">{pos}</div>
+                <div className="text-[12px] font-semibold tracking-[0.08em]">{pos}</div>
                 {!isHero && <div className="mt-1 text-[9px] leading-tight opacity-80">{player.type}</div>}
-                <div className="mt-1 text-[10px] font-medium">{player.stack}BB</div>
+                <div className="mt-1 text-[11px] font-medium">{player.stack}BB</div>
                 {isHero && <div className="mt-1 text-[1.05rem] font-bold">{scenario.hand.join(' ')}</div>}
                 {action && <div className="mt-1 text-[9px] font-semibold">{actionLabel}</div>}
               </div>
@@ -551,8 +527,8 @@ function PokerTrainer() {
 
           <div className="absolute left-1/2 top-1/2 w-32 -translate-x-1/2 -translate-y-1/2 text-center">
             <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/65">Pot Size</div>
-            <div className="mt-2 text-[2.2rem] font-bold leading-none">{scenario.pot} BB</div>
-            <div className="mt-2 text-[12px] text-slate-200/80">
+            <div className="mt-2 text-[2rem] font-bold leading-none">{scenario.pot} BB</div>
+            <div className="mt-1 text-[12px] text-slate-200/80">
               {scenario.playersLeft} left to act
             </div>
           </div>
@@ -564,29 +540,6 @@ function PokerTrainer() {
           <span>{scenario.scenarioType.replaceAll('_', ' ')}</span>
           <span>{scenario.heroPos}</span>
           <span>{scenario.handLabel}</span>
-        </div>
-
-        <div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-            <div
-              className={`h-full transition-all duration-1000 ${
-                isPaused ? 'bg-gray-500' : 'bg-blue-400'
-              }`}
-              style={{ width: `${(timeLeft / timerMax) * 100}%` }}
-            />
-          </div>
-
-          <div className="mt-3 flex items-center justify-center gap-3">
-            <button
-              onClick={() => setIsPaused((paused) => !paused)}
-              className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white"
-            >
-              {isPaused ? 'Resume' : 'Pause'}
-            </button>
-            <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300">
-              {timeLeft}s
-            </div>
-          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
@@ -604,7 +557,6 @@ function PokerTrainer() {
               className="h-11 w-24 rounded-xl border border-slate-700 bg-slate-950 px-4 text-base font-bold text-white outline-none"
             />
             <div className="text-xs font-semibold text-slate-400">
-              <div>{timeLeft}s</div>
               <div>{decisionCount} saved</div>
             </div>
           </div>
