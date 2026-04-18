@@ -49,6 +49,7 @@ type DecisionRecord = {
 };
 
 const POSITIONS: Position[] = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
+const RAISE_OPTIONS = [2.1, 3, 6];
 
 const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
   MP: { left: '18.5%', top: '24%' },
@@ -61,6 +62,7 @@ const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
 
 const STACKS = [25, 40, 100, 200];
 const STORAGE_KEY = 'preflop-trainer-decisions';
+const REVIEW_STORAGE_KEY = 'preflop-trainer-review-hands';
 
 const POSITION_INDEX: Record<Position, number> = {
   UTG: 0,
@@ -432,13 +434,32 @@ function readStoredDecisions(): DecisionRecord[] {
   }
 }
 
+function readStoredReviewHands(): Scenario[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(REVIEW_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function PokerTrainer() {
-  const [scenario, setScenario] = useState<Scenario | null>(null);
+  const [scenarioHistory, setScenarioHistory] = useState<Scenario[]>([]);
+  const [currentScenarioIndex, setCurrentScenarioIndex] = useState(0);
   const [decisionCount, setDecisionCount] = useState(0);
-  const [raiseSize, setRaiseSize] = useState('3');
+  const [reviewCount, setReviewCount] = useState(0);
+  const scenario = scenarioHistory[currentScenarioIndex] ?? null;
 
   const loadNewHand = useCallback(() => {
-    setScenario(generateScenario());
+    setScenarioHistory((current) => {
+      const next = [...current, generateScenario()].slice(-40);
+      setCurrentScenarioIndex(next.length - 1);
+      return next;
+    });
   }, []);
 
   const recordDecision = useCallback((actionLabel: string) => {
@@ -459,8 +480,22 @@ function PokerTrainer() {
     loadNewHand();
   }, [loadNewHand, scenario]);
 
+  const saveHandForReview = useCallback(() => {
+    if (!scenario || typeof window === 'undefined') return;
+
+    const existing = readStoredReviewHands();
+    const next = [scenario, ...existing].slice(0, 100);
+    window.localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(next));
+    setReviewCount(next.length);
+  }, [scenario]);
+
+  const goToPreviousHand = useCallback(() => {
+    setCurrentScenarioIndex((current) => Math.max(0, current - 1));
+  }, []);
+
   useEffect(() => {
     setDecisionCount(readStoredDecisions().length);
+    setReviewCount(readStoredReviewHands().length);
   }, []);
 
   useEffect(() => {
@@ -469,13 +504,10 @@ function PokerTrainer() {
 
   if (!scenario) return null;
 
-  const raiseDisplay = Number.parseFloat(raiseSize);
-  const normalizedRaise = Number.isFinite(raiseDisplay) && raiseDisplay > 0 ? raiseDisplay : 3;
-
   return (
     <div className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
-      <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3">
-        <div className="relative h-[min(46vh,18.4rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+      <div className="mx-auto flex h-full w-full max-w-[26.5rem] flex-col gap-3">
+        <div className="relative h-[min(52vh,21rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 rounded-[1.7rem] border border-emerald-400/15" />
 
           {POSITIONS.map((pos) => {
@@ -504,7 +536,7 @@ function PokerTrainer() {
             return (
               <div
                 key={pos}
-                className={`absolute w-[6.9rem] rounded-[1.35rem] border px-2 py-3 text-center shadow-sm transition-all duration-200 ${
+                className={`absolute w-[7.2rem] rounded-[1.35rem] border px-2 py-3 text-center shadow-sm transition-all duration-200 ${
                   isHero
                     ? 'scale-105 border-yellow-300 bg-slate-800/95'
                     : action
@@ -516,7 +548,7 @@ function PokerTrainer() {
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="text-[13px] font-semibold tracking-[0.06em]">{pos}</div>
+                <div className="text-[17px] font-semibold tracking-[0.06em]">{pos}</div>
                 {!isHero && <div className="mt-1 text-[10px] leading-tight opacity-90">{player.type}</div>}
                 <div className="mt-1 text-[11px] font-medium">{player.stack}BB</div>
                 {isHero && <div className="mt-2 text-[1.05rem] font-bold">{scenario.hand.join(' ')}</div>}
@@ -538,24 +570,25 @@ function PokerTrainer() {
           <span>{scenario.handLabel}</span>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
-          <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Raise Size
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              step="0.5"
-              min="1"
-              inputMode="decimal"
-              value={raiseSize}
-              onChange={(event) => setRaiseSize(event.target.value)}
-              className="h-11 w-24 rounded-xl border border-slate-700 bg-slate-950 px-4 text-base font-bold text-white outline-none"
-            />
-            <div className="text-xs font-semibold text-slate-400">
-              <div>{decisionCount} saved</div>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={goToPreviousHand}
+            disabled={currentScenarioIndex === 0}
+            className="rounded-2xl border border-slate-700 bg-slate-900/80 py-3 text-sm font-bold text-white disabled:opacity-40"
+          >
+            Previous Hand
+          </button>
+          <button
+            onClick={saveHandForReview}
+            className="rounded-2xl border border-slate-700 bg-slate-900/80 py-3 text-sm font-bold text-white"
+          >
+            Save For Review
+          </button>
+        </div>
+
+        <div className="flex justify-center gap-4 text-xs font-semibold text-slate-400">
+          <span>{decisionCount} decisions</span>
+          <span>{reviewCount} for review</span>
         </div>
 
         <div className="grid grid-cols-2 gap-3 pb-[max(env(safe-area-inset-bottom),0px)]">
@@ -571,12 +604,17 @@ function PokerTrainer() {
           >
             Call
           </button>
-          <button
-            onClick={() => recordDecision(`Raise ${normalizedRaise}x`)}
-            className="col-span-2 rounded-2xl bg-green-600 py-3.5 text-lg font-bold text-white"
-          >
-            Raise {normalizedRaise}x
-          </button>
+          {RAISE_OPTIONS.map((size) => (
+            <button
+              key={size}
+              onClick={() => recordDecision(`Raise ${size}x`)}
+              className={`rounded-2xl py-3.5 text-lg font-bold text-white ${
+                size === 6 ? 'col-span-2 bg-emerald-700' : 'bg-green-600'
+              }`}
+            >
+              Raise {size}x
+            </button>
+          ))}
         </div>
       </div>
     </div>
