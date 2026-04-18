@@ -51,12 +51,12 @@ type DecisionRecord = {
 const POSITIONS: Position[] = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
 
 const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
-  MP: { left: '20%', top: '16%' },
-  CO: { left: '50%', top: '16%' },
-  BTN: { left: '80%', top: '16%' },
-  UTG: { left: '20%', top: '76%' },
-  BB: { left: '50%', top: '76%' },
-  SB: { left: '80%', top: '76%' }
+  MP: { left: '18.5%', top: '20%' },
+  CO: { left: '50%', top: '20%' },
+  BTN: { left: '81.5%', top: '20%' },
+  UTG: { left: '18.5%', top: '77%' },
+  BB: { left: '50%', top: '77%' },
+  SB: { left: '81.5%', top: '77%' }
 };
 
 const STACKS = [25, 40, 100, 200];
@@ -475,8 +475,8 @@ function PokerTrainer() {
   return (
     <div className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
       <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3">
-        <div className="relative h-[min(39vh,15.5rem)] overflow-hidden rounded-[2rem] border border-emerald-800/60 bg-[linear-gradient(180deg,rgba(6,95,70,0.98),rgba(5,70,52,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.12),rgba(16,185,129,0.02)_45%,transparent_75%)]" />
+        <div className="relative h-[min(40vh,16rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+          <div className="absolute inset-0 rounded-[1.7rem] border border-emerald-400/15" />
 
           {POSITIONS.map((pos) => {
             const player = scenario.table.find((entry) => entry.position === pos)!;
@@ -504,33 +504,29 @@ function PokerTrainer() {
             return (
               <div
                 key={pos}
-                className={`absolute w-[6.15rem] rounded-[1.1rem] border px-2 py-2.5 text-center shadow-sm transition-all duration-200 ${
+                className={`absolute w-[6.9rem] rounded-[1.35rem] border px-2 py-3 text-center shadow-sm transition-all duration-200 ${
                   isHero
-                    ? 'scale-110 border-yellow-300 bg-slate-800/95'
+                    ? 'scale-105 border-yellow-300 bg-slate-800/95'
                     : action
                       ? actionStyle
-                      : 'border-emerald-700/80 bg-emerald-950/30'
+                      : 'border-white/25 bg-emerald-950/12'
                 }`}
                 style={{
                   ...SEAT_POSITIONS[pos],
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="text-[12px] font-semibold tracking-[0.08em]">{pos}</div>
-                {!isHero && <div className="mt-1 text-[9px] leading-tight opacity-80">{player.type}</div>}
+                <div className="text-[13px] font-semibold tracking-[0.06em]">{pos}</div>
+                {!isHero && <div className="mt-1 text-[10px] leading-tight opacity-90">{player.type}</div>}
                 <div className="mt-1 text-[11px] font-medium">{player.stack}BB</div>
-                {isHero && <div className="mt-1 text-[1.05rem] font-bold">{scenario.hand.join(' ')}</div>}
-                {action && <div className="mt-1 text-[9px] font-semibold">{actionLabel}</div>}
+                {isHero && <div className="mt-2 text-[1.05rem] font-bold">{scenario.hand.join(' ')}</div>}
+                {action && <div className="mt-1.5 text-[10px] font-semibold">{actionLabel}</div>}
               </div>
             );
           })}
 
-          <div className="absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-emerald-100/65">Pot Size</div>
-            <div className="mt-1 text-[1.6rem] font-bold leading-none">{scenario.pot} BB</div>
-            <div className="mt-1 text-[11px] text-slate-200/80">
-              {scenario.playersLeft} left to act
-            </div>
+          <div className="absolute left-1/2 top-1/2 w-24 -translate-x-1/2 -translate-y-1/2 text-center">
+            <div className="text-[2.1rem] font-bold leading-none text-white">{scenario.pot}BB</div>
           </div>
         </div>
 
