@@ -557,7 +557,7 @@ function PokerTrainer() {
   };
 
   return (
-    <div ref={appRef} className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
+    <div ref={appRef} className="h-[100dvh] overflow-hidden bg-slate-950 px-3 pt-[25%] pb-3 text-white">
       <div className="mx-auto flex h-full w-full max-w-[26.5rem] flex-col gap-3">
         <div className="relative h-[min(52vh,21rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 rounded-[1.7rem] border border-emerald-400/15" />
