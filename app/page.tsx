@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 type Position = 'UTG' | 'MP' | 'CO' | 'BTN' | 'SB' | 'BB';
 type PlayerType =
@@ -458,12 +458,10 @@ function getScenarioFingerprint(scenario: Scenario) {
 }
 
 function PokerTrainer() {
-  const appRef = useRef<HTMLDivElement | null>(null);
   const [scenarioHistory, setScenarioHistory] = useState<Scenario[]>([]);
   const [currentScenarioIndex, setCurrentScenarioIndex] = useState(0);
   const [decisionCount, setDecisionCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [reviewHands, setReviewHands] = useState<Scenario[]>([]);
   const scenario = scenarioHistory[currentScenarioIndex] ?? null;
 
@@ -519,19 +517,6 @@ function PokerTrainer() {
   }, []);
 
   useEffect(() => {
-    const onFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    onFullscreenChange();
-
-    return () => {
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-    };
-  }, []);
-
-  useEffect(() => {
     loadNewHand();
   }, [loadNewHand]);
 
@@ -540,35 +525,12 @@ function PokerTrainer() {
   const isSavedForReview = reviewHands.some(
     (savedScenario) => getScenarioFingerprint(savedScenario) === getScenarioFingerprint(scenario)
   );
-  const fullscreenSupported =
-    typeof document !== 'undefined' &&
-    typeof document.fullscreenEnabled === 'boolean' &&
-    document.fullscreenEnabled;
-
-  const toggleFullscreen = async () => {
-    if (!appRef.current || !fullscreenSupported) return;
-
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-      return;
-    }
-
-    await appRef.current.requestFullscreen({ navigationUI: 'hide' });
-  };
 
   return (
-    <div ref={appRef} className="h-[100dvh] overflow-hidden bg-slate-950 px-3 pt-[25%] pb-3 text-white">
-      <div className="mx-auto flex h-full w-full max-w-[26.5rem] flex-col gap-3">
+    <div className="min-h-[115svh] overflow-y-auto bg-slate-950 px-3 py-3 text-white">
+      <div className="mx-auto flex w-full max-w-[26.5rem] flex-col gap-3 pb-[max(20svh,6rem)]">
         <div className="relative h-[min(52vh,21rem)] overflow-hidden rounded-[1.7rem] border border-emerald-700/80 bg-[#10684d] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-0 rounded-[1.7rem] border border-emerald-400/15" />
-          {fullscreenSupported && (
-            <button
-              onClick={toggleFullscreen}
-              className="absolute right-3 top-3 z-10 rounded-xl border border-white/20 bg-slate-950/40 px-3 py-2 text-[15px] font-semibold text-white backdrop-blur-sm"
-            >
-              {isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
-            </button>
-          )}
 
           {POSITIONS.map((pos) => {
             const player = scenario.table.find((entry) => entry.position === pos)!;
