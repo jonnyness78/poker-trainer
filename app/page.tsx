@@ -522,7 +522,7 @@ function PokerTrainer() {
           ))}
         </div>
 
-        <div className="relative mx-auto min-h-0 flex-1 overflow-hidden rounded-[46%] border-[8px] border-emerald-950 bg-emerald-900 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+        <div className="relative mx-auto h-[min(42vh,21rem)] w-full max-w-sm flex-none overflow-hidden rounded-[46%] border-[8px] border-emerald-950 bg-emerald-900 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
           <div className="absolute inset-[2.5%] rounded-[44%] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.22),_rgba(5,150,105,0.1)_45%,_rgba(6,78,59,0.08)_100%)]" />
 
           {POSITIONS.map((pos) => {
