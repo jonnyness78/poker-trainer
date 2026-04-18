@@ -51,15 +51,13 @@ type DecisionRecord = {
 const POSITIONS: Position[] = ['UTG', 'MP', 'CO', 'BTN', 'SB', 'BB'];
 
 const SEAT_POSITIONS: Record<Position, React.CSSProperties> = {
-  BB: { left: '50%', top: '83%' },
-  UTG: { left: '22%', top: '66%' },
-  MP: { left: '20%', top: '34%' },
-  CO: { left: '50%', top: '17%' },
-  BTN: { left: '79%', top: '34%' },
-  SB: { left: '78%', top: '66%' }
+  BB: { left: '50%', top: '84%' },
+  UTG: { left: '18%', top: '63%' },
+  MP: { left: '18%', top: '20%' },
+  CO: { left: '50%', top: '11%' },
+  BTN: { left: '82%', top: '20%' },
+  SB: { left: '82%', top: '63%' }
 };
-
-const TIMER_PRESETS = [60, 30, 15, 10];
 
 const STACKS = [25, 40, 100, 200];
 const STORAGE_KEY = 'preflop-trainer-decisions';
@@ -500,30 +498,9 @@ function PokerTrainer() {
 
   return (
     <div className="h-[100dvh] overflow-hidden bg-slate-950 px-3 py-3 text-white">
-      <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-2">
-        <div>
-          <h1 className="text-[1.45rem] font-extrabold leading-none tracking-tight text-blue-400">PRE-FLOP VOLUMIZER</h1>
-          <p className="mt-1 text-xs text-slate-400">
-            {decisionCount} decisions stored locally
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          {TIMER_PRESETS.map((seconds) => (
-            <button
-              key={seconds}
-              onClick={() => setTimerMax(seconds)}
-              className={`rounded-md px-3 py-1.5 text-[11px] font-semibold ${
-                timerMax === seconds ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              {seconds}s
-            </button>
-          ))}
-        </div>
-
-        <div className="relative mx-auto h-[min(42vh,21rem)] w-full max-w-sm flex-none overflow-hidden rounded-[46%] border-[8px] border-emerald-950 bg-emerald-900 shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
-          <div className="absolute inset-[2.5%] rounded-[44%] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.22),_rgba(5,150,105,0.1)_45%,_rgba(6,78,59,0.08)_100%)]" />
+      <div className="mx-auto flex h-full w-full max-w-sm flex-col gap-3">
+        <div className="relative flex-1 overflow-hidden rounded-[2rem] border border-emerald-800/60 bg-[linear-gradient(180deg,rgba(6,95,70,0.98),rgba(5,70,52,0.98))] shadow-[0_18px_48px_rgba(0,0,0,0.45)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.12),rgba(16,185,129,0.02)_45%,transparent_75%)]" />
 
           {POSITIONS.map((pos) => {
             const player = scenario.table.find((entry) => entry.position === pos)!;
@@ -551,31 +528,31 @@ function PokerTrainer() {
             return (
               <div
                 key={pos}
-                className={`absolute w-[4.9rem] rounded-[1rem] border px-1.5 py-2 text-center shadow-sm transition-all duration-200 ${
+                className={`absolute w-[5.8rem] rounded-[1.1rem] border px-2 py-2.5 text-center shadow-sm transition-all duration-200 ${
                   isHero
                     ? 'scale-110 border-yellow-300 bg-slate-800/95'
                     : action
                       ? actionStyle
-                      : 'border-emerald-700/80 bg-emerald-950/35'
+                      : 'border-emerald-700/80 bg-emerald-950/30'
                 }`}
                 style={{
                   ...SEAT_POSITIONS[pos],
                   transform: 'translate(-50%, -50%)'
                 }}
               >
-                <div className="text-[10px] font-semibold">{pos}</div>
-                {!isHero && <div className="mt-0.5 text-[8px] leading-tight opacity-75">{player.type}</div>}
-                <div className="mt-0.5 text-[9px] font-medium">{player.stack}BB</div>
-                {isHero && <div className="mt-1 text-[0.95rem] font-bold">{scenario.hand.join(' ')}</div>}
-                {action && <div className="mt-1 text-[8px] font-semibold">{actionLabel}</div>}
+                <div className="text-[11px] font-semibold tracking-[0.08em]">{pos}</div>
+                {!isHero && <div className="mt-1 text-[9px] leading-tight opacity-80">{player.type}</div>}
+                <div className="mt-1 text-[10px] font-medium">{player.stack}BB</div>
+                {isHero && <div className="mt-1 text-[1.05rem] font-bold">{scenario.hand.join(' ')}</div>}
+                {action && <div className="mt-1 text-[9px] font-semibold">{actionLabel}</div>}
               </div>
             );
           })}
 
-          <div className="absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-100/65">Pot Size</div>
-            <div className="mt-1 text-[2rem] font-bold leading-none">{scenario.pot} BB</div>
-            <div className="mt-2 text-[11px] text-slate-200/80">
+          <div className="absolute left-1/2 top-1/2 w-32 -translate-x-1/2 -translate-y-1/2 text-center">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/65">Pot Size</div>
+            <div className="mt-2 text-[2.2rem] font-bold leading-none">{scenario.pot} BB</div>
+            <div className="mt-2 text-[12px] text-slate-200/80">
               {scenario.playersLeft} left to act
             </div>
           </div>
@@ -626,7 +603,10 @@ function PokerTrainer() {
               onChange={(event) => setRaiseSize(event.target.value)}
               className="h-11 w-24 rounded-xl border border-slate-700 bg-slate-950 px-4 text-base font-bold text-white outline-none"
             />
-            <span className="text-xs font-semibold text-slate-400">x the blind/open size</span>
+            <div className="text-xs font-semibold text-slate-400">
+              <div>{timeLeft}s</div>
+              <div>{decisionCount} saved</div>
+            </div>
           </div>
         </div>
 
