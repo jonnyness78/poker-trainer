@@ -594,7 +594,7 @@ function PokerTrainer() {
           })}
 
           <div className="absolute left-1/2 top-1/2 w-24 -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-[2.1rem] font-bold leading-none text-white">{scenario.pot}BB</div>
+            <div className="text-[1.05rem] font-bold leading-none text-white">{scenario.pot}BB</div>
           </div>
         </div>
 
